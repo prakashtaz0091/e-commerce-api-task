@@ -1,10 +1,6 @@
 """
 Management command to seed the database with test categories
 
-INSTALLATION:
-1. Create this file at: your_app/management/commands/seed_categories.py
-2. Update line 24: Change 'your_app' to your actual app name (e.g., 'products', 'inventory')
-3. Run: python manage.py seed_categories --realistic
 
 USAGE:
     python manage.py seed_categories                    # Create 5 random parent categories
