@@ -1,0 +1,90 @@
+from rest_framework import serializers
+from .models import Category
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    """Recursive serializer for nested categories"""
+
+    sub_categories = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Category
+        fields = [
+            "id",
+            "name",
+            "description",
+            "image_url",
+            "parent_category",
+            "active",
+            "sub_categories",
+        ]
+        read_only_fields = ["id"]
+
+    def get_sub_categories(self, obj):
+        """Recursively serialize child categories"""
+        # Only include active, non-deleted subcategories
+        children = obj.children.filter(
+            delete_status=Category.DELETE_STATUS_NOT_DELETED, active=Category.ACTIVE
+        )
+        return CategorySerializer(children, many=True).data
+
+
+class CategoryListSerializer(serializers.ModelSerializer):
+    """Serializer for listing only parent categories"""
+
+    sub_categories = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Category
+        fields = [
+            "id",
+            "name",
+            "description",
+            "image_url",
+            "parent_category",
+            "active",
+            "sub_categories",
+        ]
+
+    def get_sub_categories(self, obj):
+        """Get only direct children (not nested deeper)"""
+        children = obj.children.filter(
+            delete_status=Category.DELETE_STATUS_NOT_DELETED, active=Category.ACTIVE
+        )
+        return CategorySerializer(children, many=True).data
+
+
+class CategoryCreateUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for creating and updating categories"""
+
+    class Meta:
+        model = Category
+        fields = ["id", "name", "description", "image_url", "parent_category", "active"]
+        read_only_fields = ["id"]
+
+    def validate_parent_category(self, value):
+        """Ensure parent category exists and is not deleted"""
+        if value and value.delete_status == Category.DELETE_STATUS_DELETED:
+            raise serializers.ValidationError(
+                "Cannot assign a deleted category as parent."
+            )
+        return value
+
+    def validate(self, data):
+        """Prevent circular references"""
+        parent = data.get("parent_category")
+        instance = self.instance
+
+        if parent and instance:
+            # Check if trying to set a child as parent (circular reference)
+            current = parent
+            while current:
+                if current.id == instance.id:
+                    raise serializers.ValidationError(
+                        {
+                            "parent_category": "Cannot create circular category reference."
+                        }
+                    )
+                current = current.parent_category
+
+        return data

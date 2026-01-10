@@ -27,6 +27,30 @@ class SoftDeleteUUIDModel(models.Model):
         abstract = True
 
 
+class CategoryManager(models.Manager):
+    """Custom manager for Category with soft delete support"""
+
+    def get_queryset(self):
+        """Override to exclude soft-deleted by default"""
+        return (
+            super()
+            .get_queryset()
+            .filter(delete_status=SoftDeleteUUIDModel.DELETE_STATUS_NOT_DELETED)
+        )
+
+    def active(self):
+        """Get only active categories"""
+        return self.get_queryset().filter(active=Category.ACTIVE)
+
+    def parents(self):
+        """Get only parent categories (no parent)"""
+        return self.get_queryset().filter(parent_category__isnull=True)
+
+    def with_deleted(self):
+        """Include soft-deleted records"""
+        return super().get_queryset()
+
+
 class Category(SoftDeleteUUIDModel):
     ACTIVE = 1
     INACTIVE = 0
@@ -56,6 +80,10 @@ class Category(SoftDeleteUUIDModel):
         db_index=True,
     )
 
+    # Managers
+    objects = CategoryManager()
+    all_objects = models.Manager()  # Access all records including deleted
+
     class Meta:
         db_table = "categories"
         indexes = [
@@ -65,6 +93,43 @@ class Category(SoftDeleteUUIDModel):
 
     def __str__(self):
         return self.name
+
+    def soft_delete(self):
+        """Soft delete this category"""
+        self.delete_status = self.DELETE_STATUS_DELETED
+        self.save()
+
+    def restore(self):
+        """Restore a soft-deleted category"""
+        self.delete_status = self.DELETE_STATUS_NOT_DELETED
+        self.save()
+
+    def get_all_children(self):
+        """Get all descendant categories recursively"""
+        children = []
+        for child in self.children.all():
+            children.append(child)
+            children.extend(child.get_all_children())
+        return children
+
+    def get_ancestors(self):
+        """Get all ancestor categories"""
+        ancestors = []
+        current = self.parent_category
+        while current:
+            ancestors.append(current)
+            current = current.parent_category
+        return ancestors
+
+    @property
+    def is_parent(self):
+        """Check if this category has children"""
+        return self.children.exists()
+
+    @property
+    def depth(self):
+        """Get the depth level of this category in the hierarchy"""
+        return len(self.get_ancestors())
 
 
 class Product(SoftDeleteUUIDModel):
