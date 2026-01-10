@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category
+from .models import Category, Product
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -88,3 +88,33 @@ class CategoryCreateUpdateSerializer(serializers.ModelSerializer):
                 current = current.parent_category
 
         return data
+
+
+class CategorySerializerForProduct(CategorySerializer):
+    """Serializer for listing only parent categories"""
+
+    class Meta:
+        model = Category
+        fields = [
+            "id",
+            "name",
+            "parent_category",
+        ]
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    """Serializer for products"""
+
+    category = CategorySerializerForProduct()
+
+    class Meta:
+        model = Product
+        exclude = ["delete_status"]
+
+
+class ProductUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating products"""
+
+    class Meta:
+        model = Product
+        exclude = ["delete_status"]

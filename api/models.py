@@ -132,6 +132,26 @@ class Category(SoftDeleteUUIDModel):
         return len(self.get_ancestors())
 
 
+class ProductManager(models.Manager):
+    """Custom manager for Product with soft delete support"""
+
+    def get_queryset(self):
+        """Override to exclude soft-deleted by default"""
+        return (
+            super()
+            .get_queryset()
+            .filter(delete_status=SoftDeleteUUIDModel.DELETE_STATUS_NOT_DELETED)
+        )
+
+    def active(self):
+        """Get only active categories"""
+        return self.get_queryset().filter(active=Product.ACTIVE)
+
+    def with_deleted(self):
+        """Include soft-deleted records"""
+        return super().get_queryset()
+
+
 class Product(SoftDeleteUUIDModel):
     ACTIVE = 1
     INACTIVE = 0
@@ -174,6 +194,10 @@ class Product(SoftDeleteUUIDModel):
         default=ACTIVE,
         db_index=True,
     )
+
+    # Managers
+    objects = ProductManager()
+    all_objects = models.Manager()  # Access all records including deleted
 
     class Meta:
         db_table = "products"

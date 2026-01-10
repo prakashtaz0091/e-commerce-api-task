@@ -2,11 +2,13 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from django.db.models import Prefetch
-from .models import Category
+from .models import Category, Product
 from .serializers import (
     CategorySerializer,
     CategoryListSerializer,
     CategoryCreateUpdateSerializer,
+    ProductSerializer,
+    ProductUpdateSerializer,
 )
 
 
@@ -132,3 +134,19 @@ class CategoryViewSet(viewsets.ModelViewSet):
             delete_status=Category.DELETE_STATUS_NOT_DELETED
         ):
             self._soft_delete_recursive(child)
+
+
+class ProductViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    lookup_field = "id"
+
+    def get_queryset(self):
+        return Product.objects.all()
+
+    def get_serializer_class(self):
+        if self.action in ["create", "update", "partial_update"]:
+            return ProductUpdateSerializer
+        return ProductSerializer
+
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
