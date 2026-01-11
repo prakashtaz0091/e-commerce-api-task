@@ -2,6 +2,11 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from django.db.models import Prefetch
+from django.db.models import F, ExpressionWrapper, DecimalField
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter
+from .filters import ProductFilter
+
 from .models import Category, Product, Order
 from .serializers import (
     CategorySerializer,
@@ -142,8 +147,27 @@ class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     lookup_field = "id"
 
+    filter_backends = [
+        DjangoFilterBackend,
+        OrderingFilter,
+    ]
+    filterset_class = ProductFilter
+    ordering_fields = ["final_price_db", "name"]
+    ordering = ["name"]
+
     def get_queryset(self):
-        return Product.objects.all()
+        return (
+            Product.objects.filter(
+                active=Product.ACTIVE,
+            )
+            .annotate(
+                final_price_db=ExpressionWrapper(
+                    F("base_price") * (100 - F("discount_percent")) / 100,
+                    output_field=DecimalField(max_digits=10, decimal_places=2),
+                )
+            )
+            .select_related("category")
+        )
 
     def get_serializer_class(self):
         if self.action in ["create", "update", "partial_update"]:
