@@ -1,7 +1,7 @@
 import uuid
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
-from django.utils import timezone
+from django.db.models import F
 
 
 class SoftDeleteUUIDModel(models.Model):
@@ -205,6 +205,11 @@ class Product(SoftDeleteUUIDModel):
             models.Index(fields=["active", "delete_status"]),
         ]
         ordering = ["name"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(stock_quantity__gte=0), name="stock_quantity_gte_0"
+            )
+        ]
 
     def __str__(self):
         return f"{self.name} ({self.code})"
@@ -212,6 +217,14 @@ class Product(SoftDeleteUUIDModel):
     @property
     def discounted_price(self):
         return self.base_price * (100 - self.discount_percent) / 100
+
+    def decrease_stock(self, quantity):
+        self.stock_quantity = F("stock_quantity") - quantity
+        self.save(update_fields=["stock_quantity"])
+
+    def increase_stock(self, quantity):
+        self.stock_quantity = F("stock_quantity") + quantity
+        self.save(update_fields=["stock_quantity"])
 
 
 class OrderManager(models.Manager):
@@ -227,21 +240,13 @@ class OrderManager(models.Manager):
 
 
 class Order(SoftDeleteUUIDModel):
-    STATUS_PENDING = 0
-    STATUS_CONFIRMED = 10
-    STATUS_PROCESSING = 20
-    STATUS_SHIPPED = 30
-    STATUS_DELIVERED = 40
-    STATUS_CANCELLED = 50
-
-    STATUS_CHOICES = (
-        (STATUS_PENDING, "Pending"),
-        (STATUS_CONFIRMED, "Confirmed"),
-        (STATUS_PROCESSING, "Processing"),
-        (STATUS_SHIPPED, "Shipped"),
-        (STATUS_DELIVERED, "Delivered"),
-        (STATUS_CANCELLED, "Cancelled"),
-    )
+    class StatusChoices(models.IntegerChoices):
+        PENDING = (0, "Pending")
+        CONFIRMED = (10, "Confirmed")
+        PROCESSING = (20, "Processing")
+        SHIPPED = (30, "Shipped")
+        DELIVERED = (40, "Delivered")
+        CANCELLED = (50, "Cancelled")
 
     order_code = models.CharField(
         max_length=50,
@@ -272,8 +277,8 @@ class Order(SoftDeleteUUIDModel):
     )
 
     status = models.IntegerField(
-        choices=STATUS_CHOICES,
-        default=STATUS_PENDING,
+        choices=StatusChoices.choices,
+        default=StatusChoices.PENDING,
         db_index=True,
     )
 
@@ -298,6 +303,11 @@ class Order(SoftDeleteUUIDModel):
 
 
 class OrderStatusHistory(models.Model):
+    class ChangeSource(models.TextChoices):
+        API = "api", "API"
+        ADMIN = "admin", "Admin"
+        SYSTEM = "system", "System"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     order = models.ForeignKey(
@@ -307,20 +317,15 @@ class OrderStatusHistory(models.Model):
         db_index=True,
     )
 
-    old_status = models.IntegerField(
-        null=True, blank=True, choices=Order.STATUS_CHOICES
-    )
-    new_status = models.IntegerField(choices=Order.STATUS_CHOICES)
+    old_status = models.IntegerField(null=True, blank=True, choices=Order.StatusChoices)
+    new_status = models.IntegerField(choices=Order.StatusChoices)
 
     changed_by = models.CharField(max_length=100, null=True, blank=True)
 
     change_source = models.CharField(
         max_length=20,
-        choices=(
-            ("api", "API"),
-            ("admin", "Admin"),
-            ("system", "System"),
-        ),
+        choices=ChangeSource.choices,
+        default=ChangeSource.SYSTEM,
         db_index=True,
     )
 

@@ -13,7 +13,7 @@ from drf_spectacular.views import (
 
 
 urlpatterns = [
-    path("default-admin/", admin.site.urls),
+    path("default-admin/", admin.site.urls, name="default-admin"),
     # Schema generation
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     # Swagger UI
