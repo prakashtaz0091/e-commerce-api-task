@@ -92,7 +92,7 @@ class CategoryCreateUpdateSerializer(serializers.ModelSerializer):
         return data
 
 
-class CategorySerializerForProduct(CategorySerializer):
+class CategorySerializerForProduct(serializers.ModelSerializer):
     """Serializer for listing only parent categories"""
 
     class Meta:
@@ -122,7 +122,7 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         exclude = ["delete_status"]
 
 
-class ProductSerializerForOrder(ProductSerializer):
+class ProductSerializerForOrder(serializers.ModelSerializer):
     """Serializer for products in order"""
 
     class Meta:
