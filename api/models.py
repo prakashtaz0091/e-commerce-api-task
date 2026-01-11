@@ -26,6 +26,11 @@ class SoftDeleteUUIDModel(models.Model):
     class Meta:
         abstract = True
 
+    def delete(self, using=None, keep_parents=False):
+        """Override to set delete status instead of actually deleting object"""
+        self.delete_status = SoftDeleteUUIDModel.DELETE_STATUS_DELETED
+        self.save(using=using)
+
 
 class CategoryManager(models.Manager):
     """Custom manager for Category with soft delete support"""
