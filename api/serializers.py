@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import Category, Product, Order, OrderStatusHistory
+from django.db import transaction
+from django.db.models import F
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -129,13 +131,25 @@ class ProductSerializerForOrder(ProductSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
-
-    product = ProductSerializerForOrder()
-    status_display = serializers.CharField(source="get_status_display")
-
     class Meta:
         model = Order
-        exclude = ["delete_status"]
+        exclude = ["delete_status", "status_changed_at"]
+
+    def create(self, validated_data):
+        product = validated_data["product"]
+        quantity = validated_data["quantity"]
+
+        with transaction.atomic():
+            updated = Product.objects.filter(
+                id=product.id, stock_quantity__gte=quantity
+            ).update(stock_quantity=F("stock_quantity") - quantity)
+
+            if updated == 0:
+                raise serializers.ValidationError({"quantity": "Not enough stock."})
+
+            order = Order.objects.create(**validated_data)
+
+        return order
 
 
 class OrderStatusHistorySerializer(serializers.ModelSerializer):

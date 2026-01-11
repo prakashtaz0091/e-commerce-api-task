@@ -166,4 +166,3 @@ class OrderViewSet(viewsets.ModelViewSet):
             return OrderSerializer
         elif self.action in ["retrieve"]:
             return OrderReadSerializer
-        return OrderSerializer

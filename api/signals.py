@@ -82,11 +82,10 @@ def update_stock_on_order(sender, instance, created, **kwargs):
     """
     Update stocks
     """
-
     old_status = getattr(instance, "_old_status", None)
     new_status = instance.status
 
-    # if status changed
+    # if status not changed
     if old_status == new_status:
         return
 
