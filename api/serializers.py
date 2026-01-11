@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category, Product
+from .models import Category, Product, Order, OrderStatusHistory
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -117,4 +117,49 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
+        exclude = ["delete_status"]
+
+
+class ProductSerializerForOrder(ProductSerializer):
+    """Serializer for products in order"""
+
+    class Meta:
+        model = Product
+        fields = ["id", "name", "code"]
+
+
+class OrderSerializer(serializers.ModelSerializer):
+
+    product = ProductSerializerForOrder()
+    status_display = serializers.CharField(source="get_status_display")
+
+    class Meta:
+        model = Order
+        exclude = ["delete_status"]
+
+
+class OrderStatusHistorySerializer(serializers.ModelSerializer):
+    status_display = serializers.CharField(source="get_new_status_display")
+
+    class Meta:
+        model = OrderStatusHistory
+        fields = [
+            "new_status",
+            "status_display",
+            "created_at",
+            "changed_by",
+            "change_source",
+        ]
+
+
+class OrderReadSerializer(serializers.ModelSerializer):
+
+    product = ProductSerializerForOrder()
+    status_display = serializers.CharField(source="get_status_display")
+    timeline = OrderStatusHistorySerializer(
+        many=True, read_only=True, source="status_history"
+    )
+
+    class Meta:
+        model = Order
         exclude = ["delete_status"]

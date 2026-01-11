@@ -2,13 +2,15 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from django.db.models import Prefetch
-from .models import Category, Product
+from .models import Category, Product, Order
 from .serializers import (
     CategorySerializer,
     CategoryListSerializer,
     CategoryCreateUpdateSerializer,
     ProductSerializer,
     ProductUpdateSerializer,
+    OrderSerializer,
+    OrderReadSerializer,
 )
 
 
@@ -150,3 +152,18 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
+
+
+class OrderViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    lookup_field = "id"
+
+    def get_queryset(self):
+        return Order.objects.all()
+
+    def get_serializer_class(self):
+        if self.action in ["create", "update", "partial_update"]:
+            return OrderSerializer
+        elif self.action in ["retrieve"]:
+            return OrderReadSerializer
+        return OrderSerializer

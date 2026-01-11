@@ -214,6 +214,18 @@ class Product(SoftDeleteUUIDModel):
         return self.base_price * (100 - self.discount_percent) / 100
 
 
+class OrderManager(models.Manager):
+    """Custom manager for Order with soft delete support"""
+
+    def get_queryset(self):
+        """Override to exclude soft-deleted by default"""
+        return (
+            super()
+            .get_queryset()
+            .filter(delete_status=SoftDeleteUUIDModel.DELETE_STATUS_NOT_DELETED)
+        )
+
+
 class Order(SoftDeleteUUIDModel):
     STATUS_PENDING = 0
     STATUS_CONFIRMED = 10
@@ -267,6 +279,10 @@ class Order(SoftDeleteUUIDModel):
 
     status_changed_at = models.DateTimeField(null=True, blank=True)
 
+    # Managers
+    objects = OrderManager()
+    all_objects = models.Manager()  # Access all records including deleted
+
     class Meta:
         db_table = "orders"
         ordering = ["-created_at"]
@@ -291,8 +307,10 @@ class OrderStatusHistory(models.Model):
         db_index=True,
     )
 
-    old_status = models.IntegerField(null=True, blank=True)
-    new_status = models.IntegerField()
+    old_status = models.IntegerField(
+        null=True, blank=True, choices=Order.STATUS_CHOICES
+    )
+    new_status = models.IntegerField(choices=Order.STATUS_CHOICES)
 
     changed_by = models.CharField(max_length=100, null=True, blank=True)
 
