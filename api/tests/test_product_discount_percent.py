@@ -32,7 +32,7 @@ class ProductDiscountPercentTests(TestCase):
         product.save()
 
         self.assertEqual(product.discount_percent, 20)
-        self.assertEqual(product.discounted_price, Decimal("80.00"))
+        self.assertEqual(product.final_price, Decimal("80.00"))
 
     def test_product_creation_with_zero_discount(self):
         """discount_percent = 0 should be valid"""
@@ -44,7 +44,7 @@ class ProductDiscountPercentTests(TestCase):
         product.full_clean()
         product.save()
 
-        self.assertEqual(product.discounted_price, Decimal("100.00"))
+        self.assertEqual(product.final_price, Decimal("100.00"))
 
     def test_product_creation_with_full_discount(self):
         """discount_percent = 100 should be valid"""
@@ -56,7 +56,7 @@ class ProductDiscountPercentTests(TestCase):
         product.full_clean()
         product.save()
 
-        self.assertEqual(product.discounted_price, Decimal("0.00"))
+        self.assertEqual(product.final_price, Decimal("0.00"))
 
     def test_product_creation_with_negative_discount_percent_should_fail(self):
         """Negative discount_percent should raise ValidationError"""

@@ -164,7 +164,7 @@ class Command(BaseCommand):
                 quantity = random.randint(1, 5)
 
             # Calculate prices
-            unit_price = product.discounted_price
+            unit_price = product.final_price
             total_price = unit_price * quantity
 
             # Generate creation time
@@ -231,7 +231,7 @@ class Command(BaseCommand):
             quantity = random.randint(1, 10)
 
             # Calculate prices
-            unit_price = product.discounted_price
+            unit_price = product.final_price
             total_price = unit_price * quantity
 
             # Determine status

@@ -220,8 +220,12 @@ class Product(SoftDeleteUUIDModel):
         return f"{self.name} ({self.code})"
 
     @property
-    def discounted_price(self):
+    def final_price(self):
         return self.base_price * (100 - self.discount_percent) / 100
+
+    @property
+    def in_stock(self):
+        return self.stock_quantity > 0
 
     def decrease_stock(self, quantity):
         self.stock_quantity = F("stock_quantity") - quantity

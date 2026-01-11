@@ -108,10 +108,16 @@ class ProductSerializer(serializers.ModelSerializer):
     """Serializer for products"""
 
     category = CategorySerializerForProduct()
+    discount_amount = serializers.SerializerMethodField()
+    final_price = serializers.FloatField(read_only=True)
+    in_stock = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Product
         exclude = ["delete_status"]
+
+    def get_discount_amount(self, obj):
+        return obj.base_price - obj.final_price
 
 
 class ProductUpdateSerializer(serializers.ModelSerializer):
