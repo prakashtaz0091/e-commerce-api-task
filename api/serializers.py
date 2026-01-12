@@ -144,16 +144,21 @@ class OrderSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         product = validated_data["product"]
         quantity = validated_data["quantity"]
+        unit_price = validated_data["unit_price"]
+        total_price = validated_data["total_price"]
 
-        with transaction.atomic():
-            updated = Product.objects.filter(
-                id=product.id, stock_quantity__gte=quantity
-            ).update(stock_quantity=F("stock_quantity") - quantity)
+        product = Product.objects.get(id=product.id)
 
-            if updated == 0:
-                raise serializers.ValidationError({"quantity": "Not enough stock."})
+        if product.stock_quantity < quantity:
+            raise serializers.ValidationError({"quantity": "Not enough stock."})
 
-            order = Order.objects.create(**validated_data)
+        if product.base_price != unit_price:
+            raise serializers.ValidationError({"unit_price": "Invalid unit price."})
+
+        if product.base_price * quantity != total_price:
+            raise serializers.ValidationError({"total_price": "Invalid total price."})
+
+        order = Order.objects.create(**validated_data)
 
         return order
 
