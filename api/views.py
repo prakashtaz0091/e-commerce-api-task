@@ -5,7 +5,7 @@ from django.db.models import Prefetch
 from django.db.models import F, ExpressionWrapper, DecimalField
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
-from .filters import ProductFilter
+from .filters import ProductFilter, OrderFilter
 
 from .models import Category, Product, Order
 from .serializers import (
@@ -181,6 +181,14 @@ class ProductViewSet(viewsets.ModelViewSet):
 class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     lookup_field = "id"
+
+    filter_backends = [
+        DjangoFilterBackend,
+        OrderingFilter,
+    ]
+    filterset_class = OrderFilter
+    ordering_fields = ["total_price"]
+    ordering = ["-total_price"]
 
     def get_queryset(self):
         return Order.objects.all()

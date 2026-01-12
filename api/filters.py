@@ -1,5 +1,5 @@
 import django_filters
-from .models import Product
+from .models import Product, Order
 
 
 class ProductFilter(django_filters.FilterSet):
@@ -31,3 +31,16 @@ class ProductFilter(django_filters.FilterSet):
         if value is False:
             return queryset.filter(stock_quantity=0)
         return queryset
+
+
+class OrderFilter(django_filters.FilterSet):
+    status = django_filters.ChoiceFilter(choices=Order.StatusChoices)
+
+    created_at = django_filters.DateFromToRangeFilter()
+
+    class Meta:
+        model = Order
+        fields = [
+            "status",
+            "created_at",
+        ]
