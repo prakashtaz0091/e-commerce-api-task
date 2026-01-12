@@ -1,4 +1,5 @@
 from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from django.db.models import Prefetch
@@ -16,6 +17,7 @@ from .serializers import (
     ProductUpdateSerializer,
     OrderSerializer,
     OrderReadSerializer,
+    OrderStatusHistorySerializer,
 )
 
 
@@ -197,3 +199,17 @@ class OrderViewSet(viewsets.ModelViewSet):
             return OrderSerializer
 
         return OrderReadSerializer
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="history",
+        permission_classes=[IsAuthenticatedOrReadOnly],
+    )
+    def history(self, request, id=None):
+        order = self.get_object()
+
+        history_qs = order.status_history.all().order_by("-created_at")
+        serializer = OrderStatusHistorySerializer(history_qs, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
