@@ -62,7 +62,7 @@ docker-compose up --build -d
 3. **Generate secret key**
 
 ```bash
-docker-compose exec web python -c "
+docker-compose exec django_web python -c "
 from django.core.management.utils import get_random_secret_key
 print(get_random_secret_key())
 "
@@ -72,24 +72,30 @@ print(get_random_secret_key())
 4. **Run migrations**
 
 ```bash
-docker-compose exec web python manage.py migrate
+docker-compose exec django_web python manage.py migrate
 ```
 
 5. **Create superuser**
 
 ```bash
-docker-compose exec web python manage.py createsuperuser
+docker-compose exec django_web python manage.py createsuperuser
 ```
 
 6. **Seed test data (optional)**
 
 ```bash
-docker-compose exec web python manage.py seed_categories --realistic
-docker-compose exec web python manage.py seed_products --realistic
-docker-compose exec web python manage.py seed_orders --realistic
-docker-compose exec web python manage.py seed_order_history --realistic
+docker-compose exec django_web python manage.py seed_categories --realistic
+docker-compose exec django_web python manage.py seed_products --realistic
+docker-compose exec django_web python manage.py seed_orders --realistic
+docker-compose exec django_web python manage.py seed_order_history --realistic
 
 # for other commands, look at the `seed_categories`, `seed_products`, and `seed_orders` commands
+```
+
+7. **Run tests**
+
+```bash
+docker exec django_web python manage.py test
 ```
 
 ---
@@ -97,8 +103,8 @@ docker-compose exec web python manage.py seed_order_history --realistic
 ## Notes
 
 - API runs at `http://localhost:8000/`
-- All management commands run inside the `web` container:
+- All management commands run inside the `django_web` container:
 
 ```bash
-docker-compose exec web python manage.py <command>
+docker-compose exec django_web python manage.py <command>
 ```
