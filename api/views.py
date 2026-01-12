@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from django.db.models import Prefetch
 from django.db.models import F, ExpressionWrapper, DecimalField
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import OrderingFilter
+from rest_framework.filters import OrderingFilter, SearchFilter
 from .filters import ProductFilter, OrderFilter
 
 from .models import Category, Product, Order
@@ -147,13 +147,12 @@ class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     lookup_field = "id"
 
-    filter_backends = [
-        DjangoFilterBackend,
-        OrderingFilter,
-    ]
+    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
     filterset_class = ProductFilter
     ordering_fields = ["final_price_db", "name"]
     ordering = ["name"]
+
+    search_fields = ["name"]
 
     def get_queryset(self):
         return (
